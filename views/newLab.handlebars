@@ -1,0 +1,28 @@
+{{> flash}}
+<div class="row col-md-2"></div>
+<div class="row col-md-8">
+<h3>Add a New Lab</h3>
+<form action="/lab/add" method="post">
+    <div class="form-group">
+        <label for="formGroupExampleInput">Name</label>
+        <input type="text" class="form-control" name="name">
+    </div>
+    <div class="form-group">
+        <label for="formGroupExampleInput2">Home Page Url</label>
+        <input type="text" class="form-control" name="homeUrl">
+    </div>
+    <div class="form-group">
+        <label for="formGroupExampleInput2">Brief</label>
+        <input type="text" class="form-control" name="brief">
+    </div>
+    <div class="form-group">
+        <label for="formGroupExampleInput2">Research</label>
+        <input type="text" class="form-control" name="research">
+    </div>
+    <input type="hidden" name="_csrf" value="{{_csrf}}">
+    <div class="text-center">
+        <button class="btn btn-md btn-info">Submit</button>
+    </div>
+</form>
+</div>
+<div class="row col-md-2"></div>

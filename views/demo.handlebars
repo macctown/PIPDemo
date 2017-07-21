@@ -1,0 +1,209 @@
+
+<script src="/dist/js/go.js"></script>
+<script id="code">
+    // This variation on ForceDirectedLayout does not move any selected Nodes
+    // but does move all other nodes (vertexes).
+    function ContinuousForceDirectedLayout() {
+        go.ForceDirectedLayout.call(this);
+        this._isObserving = false;
+    }
+    go.Diagram.inherit(ContinuousForceDirectedLayout, go.ForceDirectedLayout);
+    /** @override */
+    ContinuousForceDirectedLayout.prototype.isFixed = function(v) {
+        return v.node.isSelected;
+    }
+    // optimization: reuse the ForceDirectedNetwork rather than re-create it each time
+    /** @override */
+    ContinuousForceDirectedLayout.prototype.doLayout = function(coll) {
+        if (!this._isObserving) {
+            this._isObserving = true;
+            // cacheing the network means we need to recreate it if nodes or links have been added or removed or relinked,
+            // so we need to track structural model changes to discard the saved network.
+            var lay = this;
+            this.diagram.addModelChangedListener(function (e) {
+                // modelChanges include a few cases that we don't actually care about, such as
+                // "nodeCategory" or "linkToPortId", but we'll go ahead and recreate the network anyway.
+                // Also clear the network when replacing the model.
+                if (e.modelChange !== "" ||
+                        (e.change === go.ChangedEvent.Transaction && e.propertyName === "StartingFirstTransaction")) {
+                    lay.network = null;
+                }
+            });
+        }
+        var net = this.network;
+        if (net === null) {  // the first time, just create the network as normal
+            this.network = net = this.makeNetwork(coll);
+        } else {  // but on reuse we need to update the LayoutVertex.bounds for selected nodes
+            this.diagram.nodes.each(function (n) {
+                var v = net.findVertex(n);
+                if (v !== null) v.bounds = n.actualBounds;
+            });
+        }
+        // now perform the normal layout
+        go.ForceDirectedLayout.prototype.doLayout.call(this, coll);
+        // doLayout normally discards the LayoutNetwork by setting Layout.network to null;
+        // here we remember it for next time
+        this.network = net;
+    }
+    // end ContinuousForceDirectedLayout
+    function init() {
+        if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
+        var $ = go.GraphObject.make;  // for conciseness in defining templates
+        myDiagram =
+                $(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
+                        {
+                            initialAutoScale: go.Diagram.Uniform,  // an initial automatic zoom-to-fit
+                            contentAlignment: go.Spot.Center,  // align document to the center of the viewport
+                            layout:
+                                    $(ContinuousForceDirectedLayout,  // automatically spread nodes apart while dragging
+                                            { defaultSpringLength: 30, defaultElectricalCharge: 100 }),
+                            // do an extra layout at the end of a move
+                            "SelectionMoved": function(e) { e.diagram.layout.invalidateLayout(); }
+                        });
+        // dragging a node invalidates the Diagram.layout, causing a layout during the drag
+        myDiagram.toolManager.draggingTool.doMouseMove = function() {
+            go.DraggingTool.prototype.doMouseMove.call(this);
+            if (this.isActive) { this.diagram.layout.invalidateLayout(); }
+        }
+        // define each Node's appearance
+        myDiagram.nodeTemplate =
+                $(go.Node, "Auto",  // the whole node panel
+                        // define the node's outer shape, which will surround the TextBlock
+                        $(go.Shape, "Circle",
+                                { stroke: "black", spot1: new go.Spot(0, 0, 5, 5), spot2: new go.Spot(1, 1, -5, -5) },
+                                new go.Binding("fill", "color")),
+                        $(go.TextBlock,
+                                { font: "bold 10pt helvetica, bold arial, sans-serif", textAlign: "center", maxSize: new go.Size(100, NaN) },
+                                new go.Binding("text", "text")),
+                        {
+                            click: function(e, obj) {
+                                var mg_id = obj.part.data.key;
+                                var label = obj.part.data.label;
+                                if(label === "Lab") {
+                                    labs.map(function(lab){
+                                        if(lab._id === mg_id) {
+                                            document.getElementById('labinfo').style.display='block';
+                                            document.getElementById('personinfo').style.display='none';
+                                            document.getElementById('lname').value = lab.name;
+                                            document.getElementById('lhomeurl').value = lab.homeUrl;
+                                            document.getElementById('lbrief').value = lab.brief;
+                                            document.getElementById('lresearch').value = lab.research;
+
+                                        }
+                                    })
+                                }
+
+                                if(label === "Person") {
+                                    people.map(function(person){
+                                        if(person._id === mg_id) {
+                                            console.log(person);
+                                            document.getElementById('personinfo').style.display='block';
+                                            document.getElementById('labinfo').style.display='none';
+                                            document.getElementById('pname').value = person.name;
+                                            document.getElementById('phomeurl').value = person.homeUrl;
+                                            document.getElementById('plinkedin').value = person.linkedin;
+                                            document.getElementById('pphone').value = person.phone;
+                                            document.getElementById('pemail').value = person.email;
+                                            document.getElementById('ptitle').value = person.title;
+                                            document.getElementById('pavatar').src = person.avatar;
+                                        }
+                                    })
+                                }
+                            },
+                            selectionChanged: function(part) {
+                                var shape = part.elt(0);
+                            }
+                        }
+                );
+        // the rest of this app is the same as samples/conceptMap.html
+        // replace the default Link template in the linkTemplateMap
+        myDiagram.linkTemplate =
+                $(go.Link,  // the whole link panel
+                        $(go.Shape,  // the link shape
+                                { stroke: "black" }),
+                        $(go.Shape,  // the arrowhead
+                                { toArrow: "standard", stroke: null }),
+                        $(go.Panel, "Auto",
+                                $(go.Shape,  // the label background, which becomes transparent around the edges
+                                        { fill: $(go.Brush, "Radial", { 0: "rgb(240, 240, 240)", 0.3: "rgb(240, 240, 240)", 1: "rgba(240, 240, 240, 0)" }),
+                                            stroke: null }),
+                                $(go.TextBlock,  // the label text
+                                        { textAlign: "center",
+                                            font: "10pt helvetica, arial, sans-serif",
+                                            stroke: "#555555",
+                                            margin: 4 },
+                                        new go.Binding("text", "text"))
+                        )
+                );
+        // create the model for the concept map
+        var nodeDataArray = {{{nodeDataArray}}};
+        var linkDataArray = {{{linkDataArray}}};
+        var labs = {{{labs}}};
+        var people = {{{people}}};
+        myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+
+    }
+    function reload() {
+        //myDiagram.layout.network = null;
+        var text = myDiagram.model.toJson();
+        myDiagram.model = go.Model.fromJson(text);
+    }
+</script>
+<div id="sample" style="padding-top: 4%;">
+    <div class="row col-md-8" id="myDiagramDiv" style="background-color: whitesmoke; border: solid 1px black; height: 700px;margin-right: 10px;"></div>
+    <div class="row col-md-4" style="display: none;" id="labinfo">
+        <h3>Lab Info Window</h3>
+        <form>
+            <div class="form-group">
+                <label for="formGroupExampleInput">Name</label>
+                <input type="text" class="form-control" name="name" id="lname">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Home Page Url</label>
+                <input type="text" class="form-control" name="homeUrl" id="lhomeurl">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Brief</label>
+                <textarea class="form-control" rows="5" name="brief" id="lbrief"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Research</label>
+                <textarea class="form-control" rows="5" name="research" id="lresearch"></textarea>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="row col-md-4" style="display: none;" id="personinfo">
+        <h3>Person Info Window</h3>
+        <form>
+            <div class="form-group">
+                <label for="formGroupExampleInput">Name</label>
+                <input type="text" class="form-control" name="name" id="pname">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Home Page Url</label>
+                <input type="text" class="form-control" name="homeUrl" id="phomeurl">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Linkedin Url</label>
+                <input type="text" class="form-control" name="linkined" id="plinkedin">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Phone</label>
+                <input type="text" class="form-control" name="phone" id="pphone">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Email</label>
+                <input type="text" class="form-control" name="email" id="pemail">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Title</label>
+                <input type="text" class="form-control" name="title" id="ptitle">
+            </div>
+            <div class="form-group">
+                <label for="formGroupExampleInput2">Avatar</label>
+                <img src="" name="avatar" id="pavatar">
+            </div>
+        </form>
+    </div>
+</div>

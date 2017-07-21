@@ -1,0 +1,69 @@
+{{> flash}}
+<div class="row text-center col-md-12">
+<a class="btn btn-primary" href="/initial/hscrb"><span class="glyphicon glyphicon-play-circle"></span> Crawl Labs</a>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a class="btn btn-primary" href="/initial/hscrb-members"><span class="glyphicon glyphicon-play-circle"></span> Crawl Researchers</a>
+</div>
+<br><br><br>
+<div class="row col-md-4">
+    <h3>Lab Info: {{labs.length}} in total</h3>
+    <p>
+        <a href="/lab/add" target="_blank" class="btn btn-md btn-info">+ New Lab</a>
+        <a href="/lab/auto-update" target="_blank" class="btn btn-md btn-warning"><span class="glyphicon glyphicon-repeat"></span> Update All</a>
+    </p>
+    <table class="table">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Lab Name</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#each labs}}
+    <tr>
+        <th scope="row">{{@index}}</th>
+        <td>{{this.name}}</td>
+        <td>
+            <a href="{{this.homeUrl}}" target="_blank" class="btn btn-md btn-success">Visit</a>
+            <a href="/lab/{{this._id}}" class="btn btn-md btn-primary">Details</a>
+            <a href="/lab/{{this._id}}/auto-update" target="_blank" class="btn btn-md btn-warning"><span class="glyphicon glyphicon-repeat"></span> Auto Update</a>
+        </td>
+    </tr>
+    {{/each}}
+    </tbody>
+</table>
+</div>
+<div class="row col-md-2"></div>
+<div class="row col-md-6">
+    <h3>Researchers Info: {{people.length}} in total</h3>
+    <p>
+        <a href="/person/add" target="_blank" class="btn btn-md btn-info">+ New Researcher</a>
+        <a href="/person/auto-update" target="_blank" class="btn btn-md btn-warning"><span class="glyphicon glyphicon-repeat"></span> Update All</a>
+    </p>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Avatar</th>
+            <th>Name</th>
+            <th>Title</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each people}}
+            <tr>
+                <th scope="row">{{@index}}</th>
+                <td><img src="http:{{this.avatar}}"></td>
+                <td>{{this.name}}</td>
+                <td>{{this.title}}</td>
+                <td>
+                    <a href="/person/{{this._id}}" class="btn btn-md btn-primary">Details</a>
+                    <a href="/person/{{this._id}}/auto-update" target="_blank" class="btn btn-md btn-warning"><span class="glyphicon glyphicon-repeat"></span> Auto Update</a>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+</div>
