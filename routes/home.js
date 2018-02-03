@@ -388,9 +388,7 @@ var homeController = {
                             "use strict";
                             console.log(err);
                         });
-
                 })
-
             })
             .catch(function(err){
                 "use strict";

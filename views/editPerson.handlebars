@@ -41,9 +41,14 @@
     <div class="form-group">
         <form action="/initial/publication/{{person._id}}" method="post">
             <input type="hidden" name="_csrf" value="{{_csrf}}">
-            <label for="formGroupExampleInput2">Publication</label>
+            <label for="formGroupExampleInput2">Publication</label><br>
             {{#each person.publication}}
-                <p>{{this.title}}</p>
+                <b>Title</b>: <a href="{{this.link}}">{{this.title}}</a><br>
+                <b>Journal</b>: {{this.journal}}<br>
+                <b>Publisher</b>: {{this.publisher}}<br>
+                <b>Abstract</b>: {{this.abstract}}<br>
+                <b>Year</b>: {{this.year}}<br>
+                <hr>
             {{/each}}
             <p>
                 Profile: <input type="text" name="profile">
@@ -51,14 +56,6 @@
             </p>
         </form>
     </div>
-    <h4>Publication</h4>
-    {{#each person.publication}}
-        title: <a href="{{this.link}}">{{this.title}}</a><br>
-        journal: {{this.journal}}<br>
-        publisher: {{this.publisher}}<br>
-        abstract: {{this.abstract}}<br>
-        year: {{this.year}}<br>
-    {{/each}}
     <input type="hidden" name="id" value="{{person._id}}">
     <input type="hidden" name="_csrf" value="{{_csrf}}">
     <div class="text-center">
