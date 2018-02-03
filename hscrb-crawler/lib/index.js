@@ -2,6 +2,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 const baseUrl = 'https://hscrb.harvard.edu/';
+const scholarBaseUrl = 'https://scholar.google.com';
 
 module.exports.crawlAllLabsName = function(callback){
 
@@ -112,6 +113,110 @@ module.exports.crawlPeopleByLabName = function(name, callback){
                         people.push(personItem);
                     });
                     resolve(people);
+                }
+            });
+        }
+    );
+
+    if (typeof callback === 'function') {
+        promise.then(
+            function(res){
+                callback(null, res)
+            })
+            .catch(callback);
+        return null;
+    }
+    return promise;
+};
+
+
+module.exports.crawlGoogleScholarPage = function(scholarProfile, callback){
+
+    const promise = new Promise(
+        function(resolve, reject) {
+            request(scholarProfile, function (error, response, html) {
+                if(error !== null || response === undefined || response.statusCode != 200) {
+                    var errorBuilder = {
+                        error: error !== null ? error : "",
+                        responseError: response !== undefined ? response.statusCode : ""
+                    };
+                    console.log('Error page on: ' + scholarProfile);
+                    reject(errorBuilder);
+                }
+                else {
+                    var $ = cheerio.load(html);
+
+                    var publicationsLink = [];
+
+                    $('#gsc_a_b > tr').toArray().map(function(entry){
+                        var publicationItemHTML = cheerio.load(entry);
+
+                        var link = publicationItemHTML('.gsc_a_t a').attr('data-href');
+
+                        publicationsLink.push(link);
+
+                    });
+
+                    resolve(publicationsLink);
+                }
+            });
+        }
+    );
+
+    if (typeof callback === 'function') {
+        promise.then(
+            function(res){
+                callback(null, res)
+            })
+            .catch(callback);
+        return null;
+    }
+    return promise;
+};
+
+
+module.exports.crawlGoogleScholarPublicationPage = function(publicationProfile, callback){
+
+    const promise = new Promise(
+        function(resolve, reject) {
+            request(scholarBaseUrl + publicationProfile, function (error, response, html) {
+                if(error !== null || response === undefined || response.statusCode != 200) {
+                    var errorBuilder = {
+                        error: error !== null ? error : "",
+                        responseError: response !== undefined ? response.statusCode : ""
+                    };
+                    console.log('Error page on publication: ' + scholarBaseUrl + publicationProfile);
+                    reject(errorBuilder);
+                }
+                else {
+                    var $ = cheerio.load(html);
+
+                    var publicationDetail = {};
+                    publicationDetail['link'] = $('a[class=gsc_vcd_title_link]').attr('href');
+                    publicationDetail['title'] = $('#gsc_vcd_title a').text();
+
+                    $('#gsc_vcd_table > div').toArray().map(function(field){
+                        var fieldItemHTML = cheerio.load(field);
+                        var type = fieldItemHTML('.gsc_vcd_field').text();
+                        switch (type){
+                            case 'Journal':
+                                publicationDetail['journal'] = fieldItemHTML('.gsc_vcd_value').text();
+                                break;
+                            case 'Publisher':
+                                publicationDetail['publisher'] = fieldItemHTML('.gsc_vcd_value').text();
+                                break;
+                            case 'Description':
+                                publicationDetail['abstract'] = fieldItemHTML('.gsc_vcd_value').text();
+                                break;
+                            case 'Publication date':
+                                publicationDetail['year'] = fieldItemHTML('.gsc_vcd_value').text().split('/')[0];
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+
+                    resolve(publicationDetail);
                 }
             });
         }

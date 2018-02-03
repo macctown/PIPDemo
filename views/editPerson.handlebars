@@ -2,7 +2,7 @@
 <div class="row col-md-2"></div>
 <div class="row col-md-8">
 <h3>Edit a New Person</h3>
-<form action="/person/edit" method="post">
+
     <div class="form-group">
         <label for="formGroupExampleInput">Name</label>
         <input type="text" class="form-control" name="name" value="{{person.name}}">
@@ -34,17 +34,35 @@
     </div>
     <div class="form-group">
         <label for="formGroupExampleInput2">Lab</label>
-        <select class="form-control" name="lab" value="{{person.lab}}">
-            {{#each labs}}
-                <option value="{{this._id}}" {{#compare ../person.lab this._id operator="strequal"}}selected="selected"{{/compare}}>{{this.name}}</option>
-            {{/each}}
-        </select>
+        {{#each person.researchAt}}
+            <p>{{this.name}}</p>
+        {{/each}}
     </div>
+    <div class="form-group">
+        <form action="/initial/publication/{{person._id}}" method="post">
+            <input type="hidden" name="_csrf" value="{{_csrf}}">
+            <label for="formGroupExampleInput2">Publication</label>
+            {{#each person.publication}}
+                <p>{{this.title}}</p>
+            {{/each}}
+            <p>
+                Profile: <input type="text" name="profile">
+                <input type="submit" class="btn btn-md btn-primary" value="Crawl Papers">
+            </p>
+        </form>
+    </div>
+    <h4>Publication</h4>
+    {{#each person.publication}}
+        title: <a href="{{this.link}}">{{this.title}}</a><br>
+        journal: {{this.journal}}<br>
+        publisher: {{this.publisher}}<br>
+        abstract: {{this.abstract}}<br>
+        year: {{this.year}}<br>
+    {{/each}}
     <input type="hidden" name="id" value="{{person._id}}">
     <input type="hidden" name="_csrf" value="{{_csrf}}">
     <div class="text-center">
         <button class="btn btn-md btn-info">Submit</button>
     </div>
-</form>
 </div>
 <div class="row col-md-2"></div>

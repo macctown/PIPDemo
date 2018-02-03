@@ -20,4 +20,6 @@ module.exports = function(app, logger) {
     app.post("/person/edit", homeController.editPerson);
 
     app.get("/demo", homeController.demoStart);
+
+    app.post("/initial/publication/:personId", homeController.initPublication);
 };

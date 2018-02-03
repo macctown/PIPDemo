@@ -5,6 +5,8 @@ var async = require('async');
 var hscrb = require('../hscrb-crawler');
 var Org = require('../models/Org');
 var Person = require('../models/Person');
+var Publication = require('../models/Publication');
+var Topic = require('../models/Topic');
 var mongoose = require('mongoose');
 var neo4j = require('neo4j-driver').v1;
 var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", "delete250"));
@@ -33,7 +35,6 @@ var homeController = {
                     console.log(err);
                 }
                 else{
-                    console.log(JSON.stringify(results[0]));
                     res.render('home', {
                         title: 'Home',
                         success: req.flash("success"),
@@ -165,13 +166,16 @@ var homeController = {
     },
 
     getLab: function(req, res) {
-        Org.findById(req.params.labId).exec(function(err, lab) {
+        Org.findById(req.params.labId)
+            .populate('members')
+            .exec(function(err, lab) {
             if(err){
                 console.log(err);
                 req.flash('error', {msg:"Error occurs when retrieve lab"});
                 res.redirect('/');
             }
             else{
+                console.log(JSON.stringify(lab));
                 res.render('editLab', {
                     title: 'Edit Lab',
                     lab: lab,
@@ -190,7 +194,11 @@ var homeController = {
         };
 
         var findPeople = function(callback) {
-            Person.findById(req.params.personId, callback);
+            Person.findById(req.params.personId)
+                .populate('researchAt')
+                .populate('studyAt')
+                .populate('supervisor')
+                .populate('publication').exec(callback);
         };
 
         async.parallel([
@@ -204,6 +212,7 @@ var homeController = {
                     res.redirect('/');
                 }
                 else{
+                    console.log(JSON.stringify(results[1]));
                     res.render('editPerson', {
                         title: 'Edit Person',
                         labs: results[0],
@@ -330,6 +339,64 @@ var homeController = {
                         });
                 }
             });
+    },
+
+    initPublication: function (req, res) {
+
+        hscrb.crawlGoogleScholarPage(req.body.profile)
+            .then(function(data){
+
+                data.map(function (publicationProfile) {
+
+                    hscrb.crawlGoogleScholarPublicationPage(publicationProfile)
+                        .then(function(publication){
+
+                            var newPublication = new Publication();
+                            newPublication.title = publication.title;
+                            newPublication.link = publication.link;
+                            newPublication.journal = publication.journal;
+                            newPublication.publisher = publication.publisher;
+                            newPublication.abstract = publication.abstract;
+                            newPublication.year = publication.year;
+                            newPublication.author = new mongoose.Types.ObjectId(req.params.personId);
+
+
+                            newPublication.save(function(err, savedPublication){
+                                "use strict";
+                                if(err){
+                                    console.log('error occur when save publication' + newPublication.name + ' error: ' + err.message);
+                                }
+                                else{
+                                    console.log(newPublication.title + " has been added to DB successfully!");
+                                    var query = {"_id" : new mongoose.Types.ObjectId(req.params.personId)};
+                                    var update = {$push: {"publication": mongoose.Types.ObjectId(savedPublication._id)}};
+                                    var option = {new: true};
+                                    Person.findOneAndUpdate(query, update, option, function(err, result){
+                                        "use strict";
+                                        if(err) {
+                                            console.log('err occur when insert publication id '+ savedPublication._id +' into lab '+ req.params.personId);
+                                        }
+                                        else{
+                                            console.log(newPublication.title + "has been added to "+req.params.personId+" successfully!");
+                                        }
+                                    });
+                                }
+                            })
+
+                        })
+                        .catch(function(err){
+                            "use strict";
+                            console.log(err);
+                        });
+
+                })
+
+            })
+            .catch(function(err){
+                "use strict";
+                console.log(err);
+            });
+
     }
 
 };
