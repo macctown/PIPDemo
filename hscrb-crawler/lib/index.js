@@ -140,7 +140,12 @@ module.exports.crawlGoogleScholarPage = function(scholarProfile, callback){
                         error: error !== null ? error : "",
                         responseError: response !== undefined ? response.statusCode : ""
                     };
-                    console.log('Error page on: ' + scholarProfile);
+                    if(response.body.includes('solving the above CAPTCHA')) {
+                        errorBuilder.error = 'We Are Blocked!!!';
+                        console.log('Crap, we just got blocked!')
+                    } else {
+                        console.log('Error page on: ' + scholarProfile);
+                    }
                     reject(errorBuilder);
                 }
                 else {
